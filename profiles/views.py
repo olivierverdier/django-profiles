@@ -12,7 +12,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from django.views.generic.list_detail import object_list
+from django.views.generic import create_update, list_detail
 
 from profiles import utils
 
@@ -96,27 +96,8 @@ def create_profile(request, form_class=None, success_url=None,
                               kwargs={ 'username': request.user.username })
     if form_class is None:
         form_class = utils.get_profile_form()
-    if request.method == 'POST':
-        form = form_class(data=request.POST, files=request.FILES)
-        if form.is_valid():
-            profile_obj = form.save(commit=False)
-            profile_obj.user = request.user
-            profile_obj.save()
-            if hasattr(form, 'save_m2m'):
-                form.save_m2m()
-            return HttpResponseRedirect(success_url)
-    else:
-        form = form_class()
-    
-    if extra_context is None:
-        extra_context = {}
-    context = RequestContext(request)
-    for key, value in extra_context.items():
-        context[key] = callable(value) and value() or value
-    
-    return render_to_response(template_name,
-                              { 'form': form },
-                              context_instance=context)
+
+    return create_update.create_object(request, form_class=form_class(request.user), extra_context=extra_context, template_name=template_name)
 create_profile = login_required(create_profile)
 
 def edit_profile(request, form_class=None, success_url=None,
@@ -189,26 +170,8 @@ def edit_profile(request, form_class=None, success_url=None,
     if success_url is None:
         success_url = reverse('profiles_profile_detail',
                               kwargs={ 'username': request.user.username })
-    if form_class is None:
-        form_class = utils.get_profile_form()
-    if request.method == 'POST':
-        form = form_class(data=request.POST, files=request.FILES, instance=profile_obj)
-        if form.is_valid():
-            form.save()
-            return HttpResponseRedirect(success_url)
-    else:
-        form = form_class(instance=profile_obj)
     
-    if extra_context is None:
-        extra_context = {}
-    context = RequestContext(request)
-    for key, value in extra_context.items():
-        context[key] = callable(value) and value() or value
-    
-    return render_to_response(template_name,
-                              { 'form': form,
-                                'profile': profile_obj, },
-                              context_instance=context)
+    return create_update.update_object(request, object_id=profile_obj.id, form_class=form_class, extra_context=extra_context, template_name=template_name)
 edit_profile = login_required(edit_profile)
 
 def profile_detail(request, username, public_profile_field=None,
@@ -273,16 +236,8 @@ def profile_detail(request, username, public_profile_field=None,
     if public_profile_field is not None and \
        not getattr(profile_obj, public_profile_field):
         profile_obj = None
-    
-    if extra_context is None:
-        extra_context = {}
-    context = RequestContext(request)
-    for key, value in extra_context.items():
-        context[key] = callable(value) and value() or value
-    
-    return render_to_response(template_name,
-                              { 'profile': profile_obj },
-                              context_instance=context)
+
+    return list_detail.object_detail(request, extra_context=extra_context, queryset=profile_obj._default_manager.all(), object_id=profile_obj.id, template_name=template_name, template_object_name='profile')
 
 def profile_list(request, public_profile_field=None,
                  template_name='profiles/profile_list.html', **kwargs):
