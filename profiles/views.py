@@ -17,12 +17,9 @@ from django.views.generic import create_update, list_detail
 from profiles import utils
 
 
-def default_success_url(profile):
-    return reverse('profiles_profile_detail',
-                   kwargs={'username': profile.user.username})
 
 
-def create_profile(request, form_class=None, success_url=default_success_url,
+def create_profile(request, form_class=None, success_url=None,
                    template_name='profiles/create_profile.html',
                    extra_context=None):
     """
@@ -61,11 +58,8 @@ def create_profile(request, form_class=None, success_url=default_success_url,
     
     ``success_url``
         The URL to redirect to after successful profile creation. If
-        this argument is not supplied, this will default to the URL of
-        :view:`profiles.views.profile_detail` for the newly-created
-        profile object. If success_url is callable, it will be called
-        with newly-created profile objects as argument.
-        Used through `django.shortcuts.redirect`.
+        this argument is not supplied, this will default to 
+        ``profile.get_absolute_url()``.
 
     ``template_name``
         The template to use when displaying the profile-creation
@@ -92,14 +86,12 @@ def create_profile(request, form_class=None, success_url=default_success_url,
     
     if form_class is None:
         form_class = utils.get_profile_form()
-    if callable(success_url):
-        success_url = success_url(profile_obj)
 
     return create_update.create_object(request, form_class=form_class(request.user), extra_context=extra_context, template_name=template_name, post_save_redirect=success_url)
 
 create_profile = login_required(create_profile)
 
-def edit_profile(request, form_class=None, success_url=default_success_url,
+def edit_profile(request, form_class=None, success_url=None,
                  template_name='profiles/edit_profile.html',
                  extra_context=None):
     """
@@ -131,12 +123,9 @@ def edit_profile(request, form_class=None, success_url=default_success_url,
         ``AUTH_PROFILE_MODULE`` setting.
     
     ``success_url``
-        The URL to redirect to following a successful edit. If not
-        specified, this will default to the URL of
-        :view:`profiles.views.profile_detail` for the profile object
-        being edited. If success_url is callable, it will be called
-        with newly-created profile objects as argument.
-        Used through `django.shortcuts.redirect`.
+        The URL to redirect to after successful profile creation. If
+        this argument is not supplied, this will default to 
+        ``profile.get_absolute_url()``.
     
     ``template_name``
         The template to use when displaying the profile-editing
