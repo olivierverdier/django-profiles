@@ -268,10 +268,10 @@ def profile_list(request, public_profile_field=None,
 
     Additionally, all arguments accepted by the
     :view:`django.views.generic.list_detail.object_list` generic view
-    will be accepted here, and applied in the same fashion, with one
-    exception: ``queryset`` will always be the ``QuerySet`` of the
+    will be accepted here, and applied in the same fashion. 
+    If ``queryset`` is not provided, it will be set to the ``QuerySet`` of the
     model specified by the ``AUTH_PROFILE_MODULE`` setting, optionally
-    filtered to remove non-publicly-viewable proiles.
+    filtered to remove non-publicly-viewable profiles.
     
     **Context:**
     
@@ -285,8 +285,10 @@ def profile_list(request, public_profile_field=None,
     
     """
     profile_model = utils.get_profile_model()
-    queryset = profile_model._default_manager.all()
-    if public_profile_field is not None:
-        queryset = queryset.filter(**{ public_profile_field: True })
-    kwargs['queryset'] = queryset
-    return object_list(request, template_name=template_name, **kwargs)
+    queryset = kwargs.get('queryset')
+    if not queryset:
+        queryset = profile_model._default_manager.all()
+        if public_profile_field is not None:
+            queryset = queryset.filter(**{ public_profile_field: True })
+        kwargs['queryset'] = queryset
+    return list_detail.object_list(request, template_name=template_name, **kwargs)
